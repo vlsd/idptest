@@ -107,6 +107,64 @@ def setup_analysis():
         fabtools.require.files.directory(data_dir)
 
 
+@task
+@decorators.needs_environment
+def setup_certificates():
+    with vagrant_settings(env.host_string):
+        source = os.path.join(
+            utils.remote_templates_root(),
+            "certs"
+        )
+        dest = "/etc/ssl/"
+        fabtools.files.copy(source, dest, recursive=True, use_sudo=True)
+
+
+@task
+@decorators.needs_environment
+def setup_apache():
+    with vagrant_settings(env.host_string):
+        source = os.path.join(
+            utils.remote_templates_root(),
+            "apache2", 
+        )
+        dest = "/etc/"
+        fabtools.files.copy(source, dest, recursive=True, use_sudo=True)
+
+
+@task
+@decorators.needs_environment
+def setup_simplesamlphp():
+    with vagrant_settings(env.host_string):
+        # copy the config files
+        source = os.path.join(
+            utils.remote_templates_root(),
+            "simplesamlphp", 
+        )
+        dest = "/etc/"
+        fabtools.files.copy(source, dest, recursive=True, use_sudo=True)
+
+        # turn on example authorization
+        fabtools.require.file(
+            '/usr/share/simplesamlphp/modules/exampleauth/enable',
+            use_sudo=True
+        )
+
+        # turn on the web service in apache (optional, I think)
+        if not fabtools.files.is_link('/etc/apache2/conf.d/simplesamlphp.conf',
+                                     use_sudo=True):
+            fabtools.files.symlink(
+                '/etc/simplesamlphp/apache.conf',
+                '/etc/apache2/conf.d/simplesamlphp.conf',
+                use_sudo=True)
+
+        # start or restart apache
+        # Start service, or restart it if it is already running
+        if fabtools.service.is_running('apache2'):
+            fabtools.service.restart('apache2')
+        else:
+            fabtools.service.start('apache2')
+
+
 @task(default=True)
 @decorators.needs_environment
 def default(do_rsync=True):
@@ -130,3 +188,8 @@ def default(do_rsync=True):
     # to get it into the same state for everyone
     setup_shell_environment()
     setup_analysis()
+
+    # set up the things needed for simplesaml
+    setup_certificates()
+    setup_apache()
+    setup_simplesamlphp()
