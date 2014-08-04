@@ -17,7 +17,7 @@ Getting started
 
 * You can now SSH to the virtual machine with `vagrant ssh`
 
-* The simpleSAMLphp server can be accessed at 
+* The simpleSAMLphp server can be accessed at http://localhost:8000/simplesamlphp/ 
 
 TODO
 ----
